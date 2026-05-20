@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Movie Watchlist Manager</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Movie Watchlist Manager</h1>
+      <p>A simple movie tracking app inspired by Letterboxd.</p>
+    </header>
+
+    <section class="card">
+      <h2 id="formTitle">Add Movie</h2>
+
+      <form id="movieForm">
+        <input type="hidden" id="movieId" />
+
+        <div class="form-grid">
+          <div>
+            <label for="title">Title *</label>
+            <input type="text" id="title" placeholder="Movie title" required />
+          </div>
+
+          <div>
+            <label for="director">Director</label>
+            <input type="text" id="director" placeholder="Director name" />
+          </div>
+
+          <div>
+            <label for="genre">Genre</label>
+            <select id="genre">
+              <option value="">Select genre</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="releaseYear">Release Year</label>
+            <input type="number" id="releaseYear" placeholder="Example: 2014" />
+          </div>
+
+          <div>
+            <label for="status">Status</label>
+            <select id="status">
+              <option value="">No status</option>
+              <option value="Watchlist">Watchlist</option>
+              <option value="Watched">Watched</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="rating">Rating</label>
+            <input type="number" id="rating" min="0" max="10" step="0.1" placeholder="0 - 10" />
+          </div>
+        </div>
+
+        <label class="checkbox-row">
+          <input type="checkbox" id="isFavorite" />
+          Favorite movie
+        </label>
+
+        <div class="button-row">
+          <button type="submit" id="submitButton">Add Movie</button>
+          <button type="button" id="cancelEditButton" class="secondary hidden">Cancel Edit</button>
+        </div>
+
+        <p id="formMessage"></p>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Search and Filter</h2>
+
+      <div class="filters">
+        <input type="text" id="searchInput" placeholder="Search by movie title..." />
+
+        <select id="filterGenre">
+          <option value="">All genres</option>
+        </select>
+
+        <select id="filterStatus">
+          <option value="">All statuses</option>
+          <option value="Watchlist">Watchlist</option>
+          <option value="Watched">Watched</option>
+        </select>
+
+        <select id="filterFavorite">
+          <option value="">All movies</option>
+          <option value="true">Favorites only</option>
+        </select>
+
+        <button id="clearFiltersButton" class="secondary">Clear</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Movie List</h2>
+      <p class="table-info">Click table headers to sort movies.</p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th class="sortable" data-sort="title">Title</th>
+              <th class="sortable" data-sort="director">Director</th>
+              <th class="sortable" data-sort="genre">Genre</th>
+              <th class="sortable" data-sort="release_year">Year</th>
+              <th class="sortable" data-sort="status">Status</th>
+              <th class="sortable" data-sort="rating">Rating</th>
+              <th class="sortable" data-sort="is_favorite">Favorite</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="movieTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

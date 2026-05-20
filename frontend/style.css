@@ -1,0 +1,196 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #111;
+  color: #f5f5f5;
+}
+
+.container {
+  width: 90%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px 0;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+header h1 {
+  margin-bottom: 8px;
+  color: #ffffff;
+}
+
+header p {
+  color: #bbbbbb;
+}
+
+.card {
+  background: #1c1c1c;
+  padding: 22px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  border: 1px solid #333;
+}
+
+.card h2 {
+  margin-top: 0;
+  margin-bottom: 18px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  color: #dddddd;
+  font-size: 14px;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #444;
+  border-radius: 8px;
+  background: #2a2a2a;
+  color: #ffffff;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: #888;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.checkbox-row input {
+  width: auto;
+}
+
+.button-row {
+  margin-top: 18px;
+  display: flex;
+  gap: 10px;
+}
+
+button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #e50914;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+button.secondary {
+  background: #444;
+}
+
+.hidden {
+  display: none;
+}
+
+#formMessage {
+  margin-top: 12px;
+  color: #ffcc00;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr auto;
+  gap: 12px;
+}
+
+.table-info {
+  color: #bbbbbb;
+  margin-top: -8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 12px;
+  border-bottom: 1px solid #333;
+  text-align: left;
+}
+
+th {
+  background: #242424;
+}
+
+td {
+  color: #eeeeee;
+}
+
+.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortable:hover {
+  color: #ffcc00;
+}
+
+.sortable.active-sort {
+  color: #ffcc00;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-btn {
+  background: #2d74da;
+}
+
+.delete-btn {
+  background: #b00020;
+}
+
+.favorite {
+  color: #ffcc00;
+  font-weight: bold;
+}
+
+@media (max-width: 900px) {
+  .form-grid,
+  .filters {
+    grid-template-columns: 1fr;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+}
