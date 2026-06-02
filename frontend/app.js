@@ -1,5 +1,20 @@
 const API_BASE_URL = "http://localhost:3000/api";
 
+const authSection = document.getElementById("authSection");
+const appSection = document.getElementById("appSection");
+
+const authForm = document.getElementById("authForm");
+const authTitle = document.getElementById("authTitle");
+const authSubtitle = document.getElementById("authSubtitle");
+const authUsernameInput = document.getElementById("authUsername");
+const authPasswordInput = document.getElementById("authPassword");
+const authSubmitButton = document.getElementById("authSubmitButton");
+const switchAuthButton = document.getElementById("switchAuthButton");
+const authMessage = document.getElementById("authMessage");
+
+const currentUsername = document.getElementById("currentUsername");
+const logoutButton = document.getElementById("logoutButton");
+
 const movieForm = document.getElementById("movieForm");
 const movieIdInput = document.getElementById("movieId");
 const titleInput = document.getElementById("title");
@@ -26,6 +41,121 @@ const clearFiltersButton = document.getElementById("clearFiltersButton");
 let genres = [];
 let currentSortBy = "id";
 let currentSortOrder = "DESC";
+let isLoginMode = true;
+
+function getToken() {
+  return localStorage.getItem("token");
+}
+
+function getStoredUser() {
+  const user = localStorage.getItem("user");
+
+  if (!user) {
+    return null;
+  }
+
+  return JSON.parse(user);
+}
+
+function getAuthHeaders() {
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${getToken()}`
+  };
+}
+
+function showAuthSection() {
+  authSection.classList.remove("hidden");
+  appSection.classList.add("hidden");
+}
+
+function showAppSection() {
+  const user = getStoredUser();
+
+  if (user) {
+    currentUsername.textContent = user.username;
+  }
+
+  authSection.classList.add("hidden");
+  appSection.classList.remove("hidden");
+
+  fetchGenres();
+  fetchMovies();
+}
+
+function updateAuthMode() {
+  if (isLoginMode) {
+    authTitle.textContent = "Login";
+    authSubtitle.textContent = "Login with your username and password.";
+    authSubmitButton.textContent = "Login";
+    switchAuthButton.textContent = "Create Account";
+  } else {
+    authTitle.textContent = "Register";
+    authSubtitle.textContent = "Create a new account with username and password.";
+    authSubmitButton.textContent = "Register";
+    switchAuthButton.textContent = "Back to Login";
+  }
+
+  authMessage.textContent = "";
+  authForm.reset();
+}
+
+switchAuthButton.addEventListener("click", () => {
+  isLoginMode = !isLoginMode;
+  updateAuthMode();
+});
+
+authForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const username = authUsernameInput.value.trim();
+  const password = authPasswordInput.value.trim();
+
+  if (username === "" || password === "") {
+    authMessage.textContent = "Username and password are required.";
+    return;
+  }
+
+  const endpoint = isLoginMode ? "/auth/login" : "/auth/register";
+
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        username,
+        password
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      authMessage.textContent = result.message || "Authentication failed.";
+      return;
+    }
+
+    localStorage.setItem("token", result.token);
+    localStorage.setItem("user", JSON.stringify(result.user));
+
+    authMessage.textContent = "";
+    showAppSection();
+  } catch (error) {
+    authMessage.textContent = "Request failed.";
+    console.error(error);
+  }
+});
+
+logoutButton.addEventListener("click", () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+
+  resetForm();
+  movieTableBody.innerHTML = "";
+  showAuthSection();
+});
 
 async function fetchGenres() {
   try {
@@ -74,7 +204,17 @@ async function fetchMovies() {
     queryParams.append("sort_by", currentSortBy);
     queryParams.append("order", currentSortOrder);
 
-    const response = await fetch(`${API_BASE_URL}/movies?${queryParams.toString()}`);
+    const response = await fetch(`${API_BASE_URL}/movies?${queryParams.toString()}`, {
+      headers: getAuthHeaders()
+    });
+
+    if (response.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      showAuthSection();
+      return;
+    }
+
     const movies = await response.json();
 
     renderMovies(movies);
@@ -103,7 +243,8 @@ function renderMovies(movies) {
     const genre = movie.genre ? movie.genre : "-";
     const releaseYear = movie.release_year ? movie.release_year : "-";
     const status = movie.status ? movie.status : "-";
-    const rating = movie.rating !== null && movie.rating !== undefined ? movie.rating : "-";
+    const rating =
+      movie.rating !== null && movie.rating !== undefined ? movie.rating : "-";
     const favorite = movie.is_favorite ? `<span class="favorite">Yes</span>` : "No";
 
     row.innerHTML = `
@@ -185,9 +326,7 @@ movieForm.addEventListener("submit", async (event) => {
   try {
     const response = await fetch(url, {
       method: method,
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(movieData)
     });
 
@@ -212,7 +351,10 @@ movieForm.addEventListener("submit", async (event) => {
 
 async function startEditMovie(id) {
   try {
-    const response = await fetch(`${API_BASE_URL}/movies/${id}`);
+    const response = await fetch(`${API_BASE_URL}/movies/${id}`, {
+      headers: getAuthHeaders()
+    });
+
     const movie = await response.json();
 
     movieIdInput.value = movie.id;
@@ -246,7 +388,8 @@ async function deleteMovie(id) {
 
   try {
     const response = await fetch(`${API_BASE_URL}/movies/${id}`, {
-      method: "DELETE"
+      method: "DELETE",
+      headers: getAuthHeaders()
     });
 
     const result = await response.json();
@@ -332,5 +475,14 @@ clearFiltersButton.addEventListener("click", () => {
   fetchMovies();
 });
 
-fetchGenres();
-fetchMovies();
+function initializePage() {
+  const token = getToken();
+
+  if (token) {
+    showAppSection();
+  } else {
+    showAuthSection();
+  }
+}
+
+initializePage();

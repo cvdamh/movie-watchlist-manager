@@ -18,6 +18,11 @@ Movie Watchlist Manager is a web-based CRUD application inspired by Letterboxd. 
 - Swagger API documentation
 - Frontend and backend validation
 - Unit testing for business logic
+- User registration with username and password
+- User login with JWT authentication
+- Password hashing using bcrypt
+- Protected movie endpoints using JWT token
+- Shared movie catalog with user-specific status, rating, and favorite information
 
 ## Technologies Used
 
@@ -37,6 +42,8 @@ Movie Watchlist Manager is a web-based CRUD application inspired by Letterboxd. 
 - swagger-ui-express
 - swagger-jsdoc
 - Jest
+- bcryptjs
+- jsonwebtoken
 
 ## Project Structure
 

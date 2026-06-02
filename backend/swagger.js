@@ -7,7 +7,7 @@ const swaggerOptions = {
       title: "Movie Watchlist Manager API",
       version: "1.0.0",
       description:
-        "REST API documentation for the Movie Watchlist Manager project."
+        "REST API documentation for the Movie Watchlist Manager project with authentication."
     },
     servers: [
       {
@@ -16,7 +16,54 @@ const swaggerOptions = {
       }
     ],
     components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT"
+        }
+      },
       schemas: {
+        AuthInput: {
+          type: "object",
+          required: ["username", "password"],
+          properties: {
+            username: {
+              type: "string",
+              example: "berkay"
+            },
+            password: {
+              type: "string",
+              example: "123456"
+            }
+          }
+        },
+        AuthResponse: {
+          type: "object",
+          properties: {
+            message: {
+              type: "string",
+              example: "Login successful."
+            },
+            token: {
+              type: "string",
+              example: "jwt_token_here"
+            },
+            user: {
+              type: "object",
+              properties: {
+                id: {
+                  type: "integer",
+                  example: 1
+                },
+                username: {
+                  type: "string",
+                  example: "berkay"
+                }
+              }
+            }
+          }
+        },
         Movie: {
           type: "object",
           properties: {
@@ -124,11 +171,80 @@ const swaggerOptions = {
       }
     },
     paths: {
+      "/api/auth/register": {
+        post: {
+          summary: "Register a new user",
+          description:
+            "Creates a new user account using username and password. Password is stored as a hash.",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/AuthInput"
+                }
+              }
+            }
+          },
+          responses: {
+            201: {
+              description: "User registered successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/AuthResponse"
+                  }
+                }
+              }
+            },
+            400: {
+              description: "Invalid input or username already exists"
+            }
+          }
+        }
+      },
+      "/api/auth/login": {
+        post: {
+          summary: "Login user",
+          description:
+            "Logs in a user with username and password and returns a JWT token.",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/AuthInput"
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: "Login successful",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/AuthResponse"
+                  }
+                }
+              }
+            },
+            401: {
+              description: "Invalid username or password"
+            }
+          }
+        }
+      },
       "/api/movies": {
         get: {
           summary: "Get all movies",
           description:
-            "Returns all movies. Supports search, filter, favorite filter, and sorting.",
+            "Returns all movies from the shared movie catalog. User-specific status, rating, and favorite information are returned according to the authenticated user.",
+          security: [
+            {
+              bearerAuth: []
+            }
+          ],
           parameters: [
             {
               name: "search",
@@ -153,7 +269,7 @@ const swaggerOptions = {
                 type: "string",
                 enum: ["Watchlist", "Watched"]
               },
-              description: "Filter movies by status"
+              description: "Filter movies by user-specific status"
             },
             {
               name: "is_favorite",
@@ -162,7 +278,7 @@ const swaggerOptions = {
                 type: "string",
                 enum: ["true"]
               },
-              description: "Filter favorite movies"
+              description: "Filter favorite movies for the authenticated user"
             },
             {
               name: "sort_by",
@@ -205,11 +321,21 @@ const swaggerOptions = {
                   }
                 }
               }
+            },
+            401: {
+              description: "Unauthorized. Token is missing or invalid."
             }
           }
         },
         post: {
           summary: "Create a new movie",
+          description:
+            "Creates a movie in the shared movie catalog and stores the authenticated user's status, rating, and favorite data in user_movies.",
+          security: [
+            {
+              bearerAuth: []
+            }
+          ],
           requestBody: {
             required: true,
             content: {
@@ -226,6 +352,9 @@ const swaggerOptions = {
             },
             400: {
               description: "Invalid input"
+            },
+            401: {
+              description: "Unauthorized"
             }
           }
         }
@@ -233,6 +362,11 @@ const swaggerOptions = {
       "/api/movies/{id}": {
         get: {
           summary: "Get a movie by id",
+          security: [
+            {
+              bearerAuth: []
+            }
+          ],
           parameters: [
             {
               name: "id",
@@ -247,6 +381,9 @@ const swaggerOptions = {
             200: {
               description: "Movie found"
             },
+            401: {
+              description: "Unauthorized"
+            },
             404: {
               description: "Movie not found"
             }
@@ -254,6 +391,13 @@ const swaggerOptions = {
         },
         put: {
           summary: "Update a movie by id",
+          description:
+            "Updates movie catalog information and the authenticated user's status, rating, and favorite information.",
+          security: [
+            {
+              bearerAuth: []
+            }
+          ],
           parameters: [
             {
               name: "id",
@@ -281,6 +425,9 @@ const swaggerOptions = {
             400: {
               description: "Invalid input"
             },
+            401: {
+              description: "Unauthorized"
+            },
             404: {
               description: "Movie not found"
             }
@@ -288,6 +435,11 @@ const swaggerOptions = {
         },
         delete: {
           summary: "Delete a movie by id",
+          security: [
+            {
+              bearerAuth: []
+            }
+          ],
           parameters: [
             {
               name: "id",
@@ -301,6 +453,9 @@ const swaggerOptions = {
           responses: {
             200: {
               description: "Movie deleted successfully"
+            },
+            401: {
+              description: "Unauthorized"
             },
             404: {
               description: "Movie not found"

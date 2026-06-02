@@ -38,7 +38,7 @@ function validateMovieInput(movie) {
   return errors;
 }
 
-async function getAllMovies(filters = {}) {
+async function getAllMovies(filters = {}, userId) {
   let query = `
     SELECT 
       movies.id,
@@ -47,17 +47,20 @@ async function getAllMovies(filters = {}) {
       movies.genre_id,
       genres.name AS genre,
       movies.release_year,
-      movies.status,
-      movies.rating,
-      movies.is_favorite,
+      user_movies.status,
+      user_movies.rating,
+      COALESCE(user_movies.is_favorite, 0) AS is_favorite,
       movies.created_at,
       movies.updated_at
     FROM movies
     LEFT JOIN genres ON movies.genre_id = genres.id
+    LEFT JOIN user_movies 
+      ON user_movies.movie_id = movies.id 
+      AND user_movies.user_id = ?
     WHERE 1 = 1
   `;
 
-  const values = [];
+  const values = [userId];
 
   if (filters.search) {
     query += " AND movies.title LIKE ?";
@@ -70,12 +73,12 @@ async function getAllMovies(filters = {}) {
   }
 
   if (filters.status) {
-    query += " AND movies.status = ?";
+    query += " AND user_movies.status = ?";
     values.push(filters.status);
   }
 
   if (filters.is_favorite === "true") {
-    query += " AND movies.is_favorite = TRUE";
+    query += " AND user_movies.is_favorite = TRUE";
   }
 
   const allowedSortFields = {
@@ -84,9 +87,9 @@ async function getAllMovies(filters = {}) {
     director: "movies.director",
     genre: "genres.name",
     release_year: "movies.release_year",
-    status: "movies.status",
-    rating: "movies.rating",
-    is_favorite: "movies.is_favorite"
+    status: "user_movies.status",
+    rating: "user_movies.rating",
+    is_favorite: "user_movies.is_favorite"
   };
 
   const sortBy = allowedSortFields[filters.sort_by] || "movies.id";
@@ -99,7 +102,7 @@ async function getAllMovies(filters = {}) {
   return rows;
 }
 
-async function getMovieById(id) {
+async function getMovieById(id, userId) {
   const [rows] = await pool.query(
     `
     SELECT 
@@ -109,22 +112,25 @@ async function getMovieById(id) {
       movies.genre_id,
       genres.name AS genre,
       movies.release_year,
-      movies.status,
-      movies.rating,
-      movies.is_favorite,
+      user_movies.status,
+      user_movies.rating,
+      COALESCE(user_movies.is_favorite, 0) AS is_favorite,
       movies.created_at,
       movies.updated_at
     FROM movies
     LEFT JOIN genres ON movies.genre_id = genres.id
+    LEFT JOIN user_movies 
+      ON user_movies.movie_id = movies.id 
+      AND user_movies.user_id = ?
     WHERE movies.id = ?
     `,
-    [id]
+    [userId, id]
   );
 
   return rows[0];
 }
 
-async function createMovie(movie) {
+async function createMovie(movie, userId) {
   const errors = validateMovieInput(movie);
 
   if (errors.length > 0) {
@@ -137,23 +143,35 @@ async function createMovie(movie) {
   const director = movie.director || null;
   const genre_id = movie.genre_id || null;
   const release_year = movie.release_year === "" ? null : movie.release_year;
+
   const status = movie.status || null;
   const rating = movie.rating === "" ? null : movie.rating;
   const is_favorite = movie.is_favorite ? 1 : 0;
 
-  const [result] = await pool.query(
+  const [movieResult] = await pool.query(
     `
     INSERT INTO movies 
     (title, director, genre_id, release_year, status, rating, is_favorite)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, NULL, NULL, FALSE)
     `,
-    [title, director, genre_id, release_year, status, rating, is_favorite]
+    [title, director, genre_id, release_year]
   );
 
-  return getMovieById(result.insertId);
+  const movieId = movieResult.insertId;
+
+  await pool.query(
+    `
+    INSERT INTO user_movies
+    (user_id, movie_id, status, rating, is_favorite)
+    VALUES (?, ?, ?, ?, ?)
+    `,
+    [userId, movieId, status, rating, is_favorite]
+  );
+
+  return getMovieById(movieId, userId);
 }
 
-async function updateMovie(id, movie) {
+async function updateMovie(id, movie, userId) {
   const errors = validateMovieInput(movie);
 
   if (errors.length > 0) {
@@ -162,7 +180,7 @@ async function updateMovie(id, movie) {
     throw error;
   }
 
-  const existingMovie = await getMovieById(id);
+  const existingMovie = await getMovieById(id, userId);
 
   if (!existingMovie) {
     const error = new Error("Movie not found.");
@@ -174,6 +192,7 @@ async function updateMovie(id, movie) {
   const director = movie.director || null;
   const genre_id = movie.genre_id || null;
   const release_year = movie.release_year === "" ? null : movie.release_year;
+
   const status = movie.status || null;
   const rating = movie.rating === "" ? null : movie.rating;
   const is_favorite = movie.is_favorite ? 1 : 0;
@@ -185,20 +204,30 @@ async function updateMovie(id, movie) {
       title = ?,
       director = ?,
       genre_id = ?,
-      release_year = ?,
-      status = ?,
-      rating = ?,
-      is_favorite = ?
+      release_year = ?
     WHERE id = ?
     `,
-    [title, director, genre_id, release_year, status, rating, is_favorite, id]
+    [title, director, genre_id, release_year, id]
   );
 
-  return getMovieById(id);
+  await pool.query(
+    `
+    INSERT INTO user_movies
+    (user_id, movie_id, status, rating, is_favorite)
+    VALUES (?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+      status = VALUES(status),
+      rating = VALUES(rating),
+      is_favorite = VALUES(is_favorite)
+    `,
+    [userId, id, status, rating, is_favorite]
+  );
+
+  return getMovieById(id, userId);
 }
 
-async function deleteMovie(id) {
-  const existingMovie = await getMovieById(id);
+async function deleteMovie(id, userId) {
+  const existingMovie = await getMovieById(id, userId);
 
   if (!existingMovie) {
     const error = new Error("Movie not found.");

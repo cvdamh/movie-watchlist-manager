@@ -6,6 +6,7 @@ require("dotenv").config();
 const pool = require("./config/db");
 const movieRoutes = require("./routes/movieRoutes");
 const genreRoutes = require("./routes/genreRoutes");
+const authRoutes = require("./routes/authRoutes");
 const swaggerSpec = require("./swagger");
 
 const app = express();
@@ -37,6 +38,7 @@ app.get("/api/test-db", async (req, res) => {
   }
 });
 
+app.use("/api/auth", authRoutes);
 app.use("/api/movies", movieRoutes);
 app.use("/api/genres", genreRoutes);
 
